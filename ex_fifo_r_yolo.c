@@ -12,7 +12,7 @@
 #define FIFO_FROM_YOLO "/tmp/from_yolo_fifo"
 #define FIFO_TO_YOLO "/tmp/to_yolo_fifo"
 
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 2
 
 
 char buff[BUFF_SIZE];
@@ -28,7 +28,7 @@ void *t_function(void *data)
         memset( buff, 0, BUFF_SIZE);
         while(read(fd_to_yolo, buff, BUFF_SIZE) != 0)
         {
-            printf("%s\n", buff);
+            printf("Reading %s\n", buff);
             // send_state = 1;
         }
     }
@@ -40,12 +40,7 @@ int main( void)
     int thr_id;
     printf("main start\n");
     // 쓰레드 생성 아규먼트로 1 을 넘긴다. 
-    thr_id = pthread_create(&p_thread[0], NULL, t_function, (void *)NULL);
-    if (thr_id < 0)
-    {
-        perror("thread create error : ");
-        exit(0);
-    }
+  
 
     printf("thread done!!!!\n");
     // from wifi thread
@@ -81,6 +76,14 @@ int main( void)
     }
     printf("fifo done!!!!\n");
 
+    thr_id = pthread_create(&p_thread[0], NULL, t_function, (void *)NULL);
+    if (thr_id < 0)
+    {
+        perror("thread create error : ");
+        exit(0);
+    }
+
+    int i =0;
     while( 1 )
     {
         // if(send_state == 1)
@@ -88,23 +91,29 @@ int main( void)
         //     send_state = 0;
         //     printf("echo start!!!!\n");
             memset(buff, 0x00, BUFF_SIZE);
-            gets(buff);
-            printf("%s", buff);
+            // gets(buff);
+            // scanf("%c",buff);
+            buff[0] = 'A'+i++;
+            // printf("%s\n", buff);
     
-            write( fd_from_yolo, buff, 1 );
-            printf("%s send\n", buff);
+            write( fd_from_yolo, buff, strlen(buff) );
+            printf("send %s\n", buff);
 
-            if( buff[0]=='q')
+            // if( buff[0]=='q')
+            // {
+            //    close(fd_from_yolo);
+            //    close(fd_to_yolo);
+            //    //system("rm -rf /tmp/fifo");
+            //    exit(0);
+            // }
+            if(buff[0]=='Z')
             {
-               close(fd_from_yolo);
-               close(fd_to_yolo);
-               //system("rm -rf /tmp/fifo");
-               exit(0);
+                i=0;
             }
             
     //    }
        sleep(1);
-       printf("running\n");
+    //    printf("running\n");
     }
     close(fd_from_yolo);
     close(fd_to_yolo);

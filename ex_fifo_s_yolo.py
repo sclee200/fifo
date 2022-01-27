@@ -24,7 +24,7 @@ Original file is located at
 # https://gist.github.com/egorps/7695667
 # """
 
-import os
+import os, stat
 import codecs
 import tempfile
 import time
@@ -33,26 +33,46 @@ import _thread     #error 2
 
 FIFO_FROM_YOLO = "/tmp/from_yolo_fifo"
 FIFO_TO_YOLO = "/tmp/to_yolo_fifo"
+fd_from =None
+fd_to = None
 
 def reader(fifo_path):
-     
-    pipein = open(fifo_path, 'r')
-    
-    while True:
-        line = pipein.readline()[:-1]
-        if(line):
-         print("got: %s " % (line))
+   # pass
+   pipein = os.open(fifo_path, os.O_RDWR)
+
+   while True:
+      # line = pipein.readline()[:-1]
+      line = os.read(pipein,1 )
+      if(line):
+         print("receive %s " % (line).decode())
 
 def mkfifo():
    os.chdir("/")
    fifo_from = os.path.join(FIFO_FROM_YOLO)
-   if(os.path.isfile(fifo_from)):
-      os.mkfifo(fifo_from)
+   # if(os.path.isfile(fifo_from)):
+   if(stat.S_ISFIFO(os.stat(fifo_from).st_mode)):
+      os.remove(fifo_from)
+   os.mkfifo(fifo_from)    
+
    os.chdir("/")
    fifo_to = os.path.join(FIFO_TO_YOLO)
-   if(os.path.isfile(fifo_to)):
-      os.mkfifo(fifo_to)
+   # if(os.path.isfile(fifo_to)):
+   if(stat.S_ISFIFO(os.stat(fifo_to).st_mode)):
+      os.remove(fifo_to)
+   os.mkfifo(fifo_to)
    return fifo_from, fifo_to
+def deletefifo():
+   os.chdir("/")
+   fifo_from = os.path.join(FIFO_FROM_YOLO)
+   # if(os.path.isfile(fifo_from)):
+   if(stat.S_ISFIFO(os.stat(fifo_from).st_mode)):
+      os.remove(fifo_from)
+   os.chdir("/")
+   fifo_to = os.path.join(FIFO_TO_YOLO)
+   # if(os.path.isfile(fifo_to)):
+   if(stat.S_ISFIFO(os.stat(fifo_to).st_mode)):
+      os.remove(fifo_to)
+    
 
 def child_procs(fifo):
    # if(os.fork() == 0):
@@ -77,19 +97,21 @@ def writer(num, child_type):
         child_procs(fifo_from)
 
     count = 0
+    fd = os.open(fifo_to, os.O_WRONLY)
     while True:
-      message = "Message %d\n" % count
-      print("================== ")
-      print("Writing: ", message)
-      
-      fd = open(fifo_to, 'w')
+      message = "%d" % count
+      # print("================== ")
+      print("Writing ", message)
       # os.write(fd, "%s" % ( message))
+      # os.write(fd, "%d" % ( count))
+
       #os.write(pipe, "aaaaaaaaaa".encode())  # error 3
-      os.write(fd, ("%s" % (message)).encode())
+      # os.write(fd, ("%s" % (message)).encode())
+      os.write(fd, ("%s" % (count)).encode())
       count += 1
       time.sleep(1)
-      # if(count == 10):
-      #    break
+      if(count == 100):
+         count = 0
 
 
 if __name__ == '__main__':
@@ -98,6 +120,10 @@ if __name__ == '__main__':
       # writer(1, 'process')
    except Exception as e:    
     print('예외가 발생했습니다.', e)
+   finally:
+      os.close(fd_from)
+      os.close(fd_to)
+      deletefifo()
 
 
 
