@@ -24,12 +24,15 @@ Original file is located at
 # https://gist.github.com/egorps/7695667
 # """
 
+import errno
 import os, stat
 import codecs
 import tempfile
 import time
 #import thread
-import _thread     #error 2
+import _thread
+
+from click import pass_context     #error 2
 
 FIFO_FROM_YOLO = "/tmp/from_yolo_fifo"
 FIFO_TO_YOLO = "/tmp/to_yolo_fifo"
@@ -50,17 +53,32 @@ def mkfifo():
    os.chdir("/")
    fifo_from = os.path.join(FIFO_FROM_YOLO)
    # if(os.path.isfile(fifo_from)):
-   if(stat.S_ISFIFO(os.stat(fifo_from).st_mode)):
-      os.remove(fifo_from)
-   os.mkfifo(fifo_from)    
+   #    if(stat.S_ISFIFO(os.stat(fifo_from).st_mode)):
+   #       os.remove(fifo_from)
+   # os.mkfifo(fifo_from)    
+   try:
+      os.mkfifo(fifo_from) 
+   except OSError as e:
+      if e.errno == errno.EEXIST:
+         pass 
+      else:
+         raise 
 
    os.chdir("/")
    fifo_to = os.path.join(FIFO_TO_YOLO)
    # if(os.path.isfile(fifo_to)):
-   if(stat.S_ISFIFO(os.stat(fifo_to).st_mode)):
-      os.remove(fifo_to)
-   os.mkfifo(fifo_to)
+   #    if(stat.S_ISFIFO(os.stat(fifo_to).st_mode)):
+   #       os.remove(fifo_to)
+   # os.mkfifo(fifo_to)
+   try:
+      os.mkfifo(fifo_to) 
+   except OSError as e:
+      if e.errno == errno.EEXIST:
+         pass 
+      else:
+         raise 
    return fifo_from, fifo_to
+   
 def deletefifo():
    os.chdir("/")
    fifo_from = os.path.join(FIFO_FROM_YOLO)
@@ -120,10 +138,10 @@ if __name__ == '__main__':
       # writer(1, 'process')
    except Exception as e:    
     print('예외가 발생했습니다.', e)
-   finally:
-      os.close(fd_from)
-      os.close(fd_to)
-      deletefifo()
+   # finally:
+      # os.close(fd_from)
+      # os.close(fd_to)
+      # deletefifo()
 
 
 
